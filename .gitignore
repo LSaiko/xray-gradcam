@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+*.pth
+*.pt
+outputs/
+data/test_images/*.jpg
+data/test_images/*.png
+.env
+.DS_Store
+*.egg-info/
+dist/
+build/
+
+# test / coverage artefacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
