@@ -145,6 +145,19 @@ class GradCAM:
             image_tensor = image_tensor.unsqueeze(0)  # ensure (1, C, H, W)
 
         # ---- Step 1: Forward pass ----------------------------------------
+        # Ensure the input tensor participates in the computation graph.
+        # torch.randn() and PIL-loaded tensors have requires_grad=False by
+        # default.  When no input to the hooked layer requires gradients,
+        # register_full_backward_hook emits a UserWarning about firing "with
+        # respect to module outputs since no inputs require gradients."
+        # Setting requires_grad_(True) builds the full graph from input →
+        # activations → logits, eliminating the warning.
+        #
+        # We detach() first to sever any prior computation history (e.g. if
+        # the caller reuses a tensor across calls) and avoid double-grad
+        # issues.  The clone is not needed because we never write in-place.
+        image_tensor = image_tensor.detach().requires_grad_(True)
+
         # The forward hook fires here and populates self.feature_maps.
         # We do NOT use torch.no_grad() because we need gradients to flow back
         # through the network in step 3.
@@ -305,6 +318,10 @@ class GradCAMPlusPlus(GradCAM):
         """
         if image_tensor.dim() == 3:
             image_tensor = image_tensor.unsqueeze(0)
+
+        # Same requires_grad fix as GradCAM.generate() -- see the detailed
+        # comment there.  Both subclasses share identical steps 1-3.
+        image_tensor = image_tensor.detach().requires_grad_(True)
 
         # Steps 1-3 are identical to GradCAM — forward, resolve class,
         # backward.  The hooks populate self.feature_maps and self.gradients
