@@ -31,11 +31,22 @@ import torch
 from PIL import Image
 from torchvision import transforms
 
-# Use the non-interactive Agg backend so save_visualization() works in
+# Switch to the non-interactive Agg backend so save_visualization() works in
 # headless environments (servers, CI, Docker) where no display is attached.
-# We set this before any figure is created to avoid a "backend already set"
-# UserWarning.
-matplotlib.use("Agg")
+#
+# Guard: only call matplotlib.use() if no backend has been set yet.
+# Calling it after another module has already initialised a backend raises a
+# warning (or in older matplotlib versions, a hard error).  This pattern is
+# the safest way to request Agg without breaking callers that import
+# visualize.py into an interactive notebook or a GUI application.
+if matplotlib.get_backend().lower() != "agg":
+    try:
+        matplotlib.use("Agg")
+    except Exception:
+        # If switching fails (e.g. a figure already exists), continue with
+        # whatever backend is active -- save_visualization() will still work
+        # as long as the active backend supports savefig().
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -377,10 +388,11 @@ def generate_batch_report(
         >>> results[0]["prediction"]
         'Pneumonia'
     """
-    # Local import keeps visualize.py importable even if src/ is not on
-    # sys.path as a package -- avoids a circular / missing-module error at
-    # import time for callers who only need preprocess_xray or overlay_heatmap.
-    from src.model import predict
+    # Relative import works whether src/ is used as a plain directory
+    # (sys.path hack) or installed as a proper package via pip install -e .
+    # The old absolute 'from src.model import predict' broke when the installed
+    # package name differed from the directory name.
+    from .model import predict
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

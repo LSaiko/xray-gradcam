@@ -47,10 +47,11 @@ def load_model(checkpoint_path, num_classes=2, device="cpu"):
         >>> model = load_model("weights/densenet_pneumonia.pth",
         ...                    num_classes=2, device="cuda")
     """
-    # Build with pretrained=False — we supply our own weights.
-    # Using pretrained=True here would download ImageNet weights and then
-    # immediately overwrite them, wasting time and bandwidth.
-    model = models.densenet121(pretrained=False)
+    # weights=None tells torchvision to skip downloading ImageNet weights.
+    # The old pretrained=False kwarg is deprecated since torchvision 0.13
+    # and generates a UserWarning on every call; weights=None is the correct
+    # modern equivalent and works on torchvision >=0.13.
+    model = models.densenet121(weights=None)
 
     # DenseNet121 stores its final classifier as model.classifier.
     # in_features is 1024 for this architecture (output of the global

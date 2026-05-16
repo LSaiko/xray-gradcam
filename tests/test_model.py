@@ -332,14 +332,14 @@ class TestGetTargetLayer:
     @pytest.fixture(scope="class")
     def densenet(self):
         """
-        Build DenseNet121 with pretrained=False once per test class.
+        Build DenseNet121 (weights=None) once per test class.
 
         scope='class' means the model is constructed once and shared across
         all methods in this class -- DenseNet121 takes ~0.5 s to build on
         slow hardware, so we avoid rebuilding it four times.
         """
         from torchvision import models
-        model = models.densenet121(pretrained=False)
+        model = models.densenet121(weights=None)
         model.eval()
         return model
 
@@ -417,20 +417,16 @@ class TestLoadModel:
     @pytest.fixture(scope="class")
     def bare_checkpoint(self, tmp_path_factory):
         """
-        Build DenseNet121(pretrained=False), replace its head with Linear(1024,2),
+        Build DenseNet121(weights=None), replace its head with Linear(1024,2),
         and torch.save() the bare state-dict to a temp file.
 
         scope='class' means this fixture runs once for all methods in
         TestLoadModel, avoiding redundant DenseNet constructions and disk writes.
         """
-        import warnings
         from torchvision import models
 
-        # Silence the torchvision 'pretrained is deprecated' warning -- we know,
-        # we are intentionally using pretrained=False.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            net = models.densenet121(pretrained=False)
+        # weights=None is the modern replacement for the deprecated pretrained=False.
+        net = models.densenet121(weights=None)
 
         net.classifier = nn.Linear(1024, 2)
         ckpt_dir  = tmp_path_factory.mktemp("bare_ckpt")
@@ -444,12 +440,9 @@ class TestLoadModel:
         Same weights saved as a Lightning-style wrapper dict:
         {'state_dict': ..., 'epoch': 10}
         """
-        import warnings
         from torchvision import models
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            net = models.densenet121(pretrained=False)
+        net = models.densenet121(weights=None)
 
         net.classifier = nn.Linear(1024, 2)
         ckpt_dir  = tmp_path_factory.mktemp("wrapped_ckpt")
